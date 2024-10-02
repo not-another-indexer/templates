@@ -1,0 +1,149 @@
+object Query {
+    sealed interface AuthScreen {
+        // Зарегистрироваться
+        sealed interface Register : AuthScreen {
+            data class Request(
+                val username: String,
+                val displayName: String,
+                val rawPassword: String,
+            ) : Register
+
+            // RESPONSE: 200 OK.
+        }
+
+        // Войти в систему
+        sealed interface SignIn : AuthScreen {
+            data class Request(
+                val username: String,
+                val rawPassword: String,
+            ) : SignIn
+
+            data class Response(
+                val username: String,
+                val displayName: String,
+                val accessToken: String,
+                val refreshToken: String,
+            ) : SignIn
+        }
+
+        // Обновить токен
+        sealed interface RefreshToken : AuthScreen {
+            data class Request(
+                val refreshToken: String,
+            ) : RefreshToken
+
+            data class Response(
+                val accessToken: String,
+            ) : RefreshToken
+        }
+    }
+
+    sealed interface MainScreen {
+        // Создать галерею
+        sealed interface CreateGallery : MainScreen {
+            data class Request(
+                val galleryName: String,
+            ) : CreateGallery
+
+            data class Response(
+                val galleryId: Long,
+                val galleryName: String
+            ) : CreateGallery
+        }
+
+        // Получить все галереи пользователя
+        sealed interface GetGalleries : MainScreen {
+            // REQUEST: GET (user data from access token).
+
+            data class GalleryDto(
+                val galleryId: Long,
+                val galleryName: String,
+                val preview: List<Long> // идентификаторы изображений (от нуля до 4 включительно)
+            )
+
+            data class Response(
+                val content: List<GalleryDto>
+            ) : GetGalleries
+        }
+
+        // Удалить галереи
+        sealed interface DeleteGallery : MainScreen {
+            data class Request(val galleryId: Long) : DeleteGallery
+
+            // RESPONSE: 200 OK.
+        }
+    }
+
+    sealed interface GalleryScreen {
+        data class ImageDto(val imageId: Long, val galleryId: Long, val description: String)
+
+        // Получить все изображения в галерее
+        sealed interface GetGalleryImages : GalleryScreen {
+            data class Request(
+                val galleryId: Long,
+                val size: Int,
+                val offset: Int
+            ) : GetGalleryImages
+
+            data class Response(
+                val content: List<ImageDto>,
+                val total: Long
+            ) : GetGalleryImages
+        }
+
+        // Добавить изображение
+        sealed interface AddImage : GalleryScreen {
+            data class Request(
+                val galleryId: Long,
+                val description: String,
+                val content: ByteArray
+            ) : AddImage
+
+            data class Response(val content: ImageDto) : AddImage
+        }
+
+        // Удалить изображение
+        sealed interface DeleteImage : GalleryScreen {
+            data class Request(
+                val imageId: Long,
+                val galleryId: Long
+            ) : DeleteImage
+
+            // RESPONSE: 200 OK.
+        }
+
+        // Получить изображение
+        sealed interface GetImageContent : GalleryScreen {
+            data class Request(
+                val imageId: Long,
+                val galleryId: Long
+            ) : GetImageContent
+
+            data class Response(
+                val content: ByteArray
+            ) : GetImageContent
+        }
+
+        // Искать изображение
+        sealed interface SearchImage : GalleryScreen {
+            enum class Key {
+                SEMANTIC_ONE_PEACE_SIMILARITY,
+                RECOGNIZED_TEXT_SIMILARITY,
+                TEXTUAL_DESCRIPTION_SIMILARITY,
+                RECOGNIZED_FACE_SIMILARITY,
+                RECOGNIZED_TEXT_BM25_RANK,
+                TEXTUAL_DESCRIPTION_BM25_RANK,
+            }
+
+            data class Request(
+                val query: String,
+                val galleryId: Long,
+                val parameters: Map<Key, Double>
+            ) : SearchImage
+
+            data class Response(
+                val content: List<ImageDto>
+            ) : SearchImage
+        }
+    }
+}
